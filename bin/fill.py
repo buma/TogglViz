@@ -45,6 +45,7 @@ if __name__ == '__main__':
     csvreader = unicode_csv_reader(args['FILE'][0])
     header = csvreader.next()
     print header
+    # User,Email,Client,Project,"",Description,Billable,Start date,Start time,End date,End time,Duration,Tags
     limit = 0
     for row in csvreader:
         print row
@@ -53,10 +54,10 @@ if __name__ == '__main__':
         #print client_id
         #print project_id
         try:
-            date = parse(row[5], dayfirst=True)
+            date = parse(row[7]+" "+row[8], dayfirst=True)
             #print date
-            duration = parse(row[7]).time()
-            time_slice = TimeSlice(row[1], row[4], row[2], row[3], date, duration)
+            duration = parse(row[11]).time()
+            time_slice = TimeSlice(row[2], row[6], row[3], row[5], date, duration)
             DBSession.add(time_slice)
             DBSession.commit()
         except Exception, ex:
