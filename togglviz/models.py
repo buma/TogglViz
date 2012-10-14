@@ -34,6 +34,8 @@ class Client(Base):
     client_billable = Column(Enum('y', 'n'))
     client_name = Column(Unicode(length=10), unique=True)
 
+    client_ids = {}
+
     def __init__(self, client_name, client_billable):
         self.client_name = client_name
         self.client_billable = client_billable[0].lower()
@@ -44,6 +46,8 @@ class Client(Base):
 
         client_billable is Yes or No
         """
+        if client_name in Client.client_ids:
+            return Client.client_ids[client_name]
         client = DBSession.query(Client) \
         .filter(Client.client_name == client_name) \
         .first()
@@ -51,6 +55,7 @@ class Client(Base):
             client = Client(client_name, client_billable)
             DBSession.add(client)
             DBSession.flush()
+        Client.client_ids[client_name] = client.id
         return client.id
 
 
@@ -67,6 +72,8 @@ class ClientProject(Base):
     project = Column(Unicode(length=50))
     client = relationship('Client')
 
+    client_projects_ids = {}
+
     def __init__(self, client_id, project):
         self.client_id = client_id
         self.project = project
@@ -76,6 +83,9 @@ class ClientProject(Base):
         """Gets id for client with project. If it doesn't exist yet it inserts it
 
         client_billable is Yes or No"""
+        client_project = client_name + u"_" + project
+        if client_project in ClientProject.client_projects_ids:
+            return ClientProject.client_projects_ids[client_project]
         client_id = Client.get_client_id(client_name, client_billable)
         client_project = DBSession.query(ClientProject) \
                 .filter(ClientProject.client_id == client_id) \
@@ -85,6 +95,7 @@ class ClientProject(Base):
             client_project = ClientProject(client_id, project)
             DBSession.add(client_project)
             DBSession.flush()
+        ClientProject.client_projects_ids[client_project] = client_project.id
         return client_project.id
 
 
@@ -94,13 +105,15 @@ class Description(Base):
     id = Column(Integer, primary_key=True, unique=True, autoincrement=True)
     description = Column(Unicode(length=100))
 
+    description_ids = {}
+
     def __init__(self, description):
         self.description = description
 
     @staticmethod
     def clean_description(description):
         r = regex_description.match(description)
-        kje = None
+        kje = "d"
         if r:
             kje = r.groups()[0].lower()
             description = description[3:]
@@ -108,6 +121,9 @@ class Description(Base):
 
     @staticmethod
     def get_description_id(description_text):
+
+        if description_text in Description.description_ids:
+            return Description.description_ids[description_text]
         description = DBSession.query(Description) \
                 .filter(Description.description == description_text) \
                 .first()
@@ -115,6 +131,7 @@ class Description(Base):
             description = Description(description_text)
             DBSession.add(description)
             DBSession.flush()
+        Description.description_ids[description_text] = description.id
         return description.id
 
 
@@ -123,7 +140,6 @@ class TimeSlice(Base):
     __table_args__ = (
         UniqueConstraint('client_proj', 'fk_description', 'datum', name="client_proj_uniq"),
         )
-
 
     id = Column(Integer(10), primary_key=True, unique=True, autoincrement=True)
     kje = Column(Enum('d', 's'))
